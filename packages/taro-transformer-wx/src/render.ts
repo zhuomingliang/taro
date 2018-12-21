@@ -20,13 +20,15 @@ import {
   isVarName,
   setParentCondition,
   isContainJSXElement,
-  getSlotName
+  getSlotName,
+  replaceJSXTextWithTextComponent
 } from './utils'
 import { difference, get as safeGet, cloneDeep } from 'lodash'
 import {
   setJSXAttr,
   buildBlockElement,
-  parseJSXElement
+  parseJSXElement,
+  generateJSXAttr
 } from './jsx'
 import { DEFAULT_Component_SET, MAP_CALL_ITERATOR, LOOP_STATE, LOOP_CALLEE, THIRD_PARTY_COMPONENTS, LOOP_ORIGINAL, INTERNAL_GET_ORIGNAL, GEL_ELEMENT_BY_ID } from './constant'
 import { Adapter, Adapters } from './adapter'
@@ -408,12 +410,18 @@ export class RenderParser {
                     t.isArrowFunctionExpression(func)
                   ) {
                     const [item, index] = func.params
+                    let itemName = ''
+                    let indexName = ''
                     if (t.isIdentifier(item)) {
-                      setJSXAttr(
-                        jsxElementPath.node,
-                        Adapter.forItem,
-                        t.stringLiteral(item.name)
-                      )
+                      if (Adapters.quickapp !== Adapter.type) {
+                        setJSXAttr(
+                          jsxElementPath.node,
+                          Adapter.forItem,
+                          t.stringLiteral(item.name)
+                        )
+                      } else {
+                        itemName = item.name
+                      }
                       this.loopScopes.add(item.name)
                     } else if (t.isObjectPattern(item)) {
                       throw codeFrameError(item.loc, 'JSX map 循环参数暂时不支持使用 Object pattern 解构。')
@@ -425,12 +433,31 @@ export class RenderParser {
                       )
                     }
                     if (t.isIdentifier(index)) {
-                      setJSXAttr(
-                        jsxElementPath.node,
-                        Adapter.forIndex,
-                        t.stringLiteral(index.name)
-                      )
+                      if (Adapters.quickapp !== Adapter.type) {
+                        setJSXAttr(
+                          jsxElementPath.node,
+                          Adapter.forIndex,
+                          t.stringLiteral(index.name)
+                        )
+                      } else {
+                        indexName = index.name
+                      }
                       this.loopScopes.add(index.name)
+                    }
+                    if (Adapters.quickapp === Adapter.type) {
+                      if (itemName || indexName) {
+                        const code = generateJSXAttr(ary)
+                        let forExpr: string
+                        if (itemName && !indexName) {
+                          forExpr = `${itemName} in ${code}`
+                        } else {
+                          forExpr = `(${indexName}, ${itemName}) in ${code}`
+                        }
+                        setJSXAttr(jsxElementPath.node, Adapter.for, t.stringLiteral(forExpr))
+                      }
+                      // if (itemName && !indexName) {
+                      //   const forExpr = gene
+                      // }
                     }
                     this.loopComponents.set(callExpr, jsxElementPath)
                     // caller.replaceWith(jsxElementPath.node)
@@ -1013,6 +1040,9 @@ export class RenderParser {
     renderBody.traverse(this.loopComponentVisitor)
     this.handleLoopComponents()
     renderBody.traverse(this.visitors)
+    if (Adapter.type === Adapters.quickapp) {
+      renderBody.traverse(this.quickappVistor)
+    }
     this.setOutputTemplate()
     this.removeJSXStatement()
     this.setUsedState()
@@ -1020,6 +1050,15 @@ export class RenderParser {
     this.setCustomEvent()
     this.createData()
     this.setProperies()
+  }
+
+  private quickappVistor: Visitor = {
+    JSXExpressionContainer (path) {
+      if (path.parentPath.isJSXAttribute() || isContainJSXElement(path)) {
+        return
+      }
+      replaceJSXTextWithTextComponent(path)
+    }
   }
 
   checkDuplicateData () {
