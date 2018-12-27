@@ -1,4 +1,3 @@
-
 export = Taro;
 export as namespace Taro;
 
@@ -352,6 +351,7 @@ declare namespace Taro {
 
     $router: {
       params: any
+      preload: any
     }
 
     setState<K extends keyof S>(
@@ -415,15 +415,26 @@ declare namespace Taro {
     WEB = 'WEB',
     RN = 'RN',
     SWAN = 'SWAN',
-    ALIPAY = 'ALIPAY'
+    ALIPAY = 'ALIPAY',
+    TT = 'TT'
   }
 
-  function getEnv(): ENV_TYPE.WEAPP | ENV_TYPE.WEB | ENV_TYPE.RN;
+  function getEnv(): ENV_TYPE.WEAPP | ENV_TYPE.WEB | ENV_TYPE.RN | ENV_TYPE.ALIPAY | ENV_TYPE.TT | ENV_TYPE.SWAN;
 
   function render(component: Component | JSX.Element, element: Element | null): any;
 
   function internal_safe_set (...arg: any[]): any;
   function internal_safe_get (...arg: any[]): any;
+
+  type MessageType = 'info' | 'success' | 'error' | 'warning';
+
+  interface AtMessageOptions {
+    message: string,
+    type?: MessageType,
+    duration?: number
+  }
+
+  function atMessage (options: AtMessageOptions): void;
 
   function pxTransform(size: number): string
 
@@ -435,7 +446,7 @@ declare namespace Taro {
   /**
    *
    * 微信端能力
-   * original code from: https://github.com/qiu8310/minapp/blob/master/packages/minapp-wx/typing/wx.d.ts
+   * original code from: https://github.com/wx-minapp/minapp-wx/blob/master/typing/wx.d.ts
    * Lincenced under MIT license: https://github.com/qiu8310/minapp/issues/69
    * thanks for the great work by @qiu8310 👍👍👍
    *
@@ -2483,6 +2494,12 @@ declare namespace Taro {
      */
     pause(): void
     /**
+     * 停止
+     * 
+     * @since 1.7.0
+     */
+    stop(): void
+    /**
      * 跳转到指定位置，单位 s
      */
     seek(position: number): void
@@ -2501,13 +2518,25 @@ declare namespace Taro {
      *
      * @since 1.4.0
      */
-    requestFullScreen(): void
+    requestFullScreen(param: {direction: 0 | 90 | -90}): void
     /**
      * 退出全屏
      *
      * @since 1.4.0
      */
     exitFullScreen(): void
+    /**
+     * 显示状态栏，仅在iOS全屏下有效
+     *
+     * @since 2.1.0
+     */
+    showStatusBar(): void
+    /**
+     * 隐藏状态栏，仅在iOS全屏下有效
+     *
+     * @since 2.1.0
+     */
+    hideStatusBar(): void
   }
   /**
    * @since 1.6.0
@@ -7484,9 +7513,21 @@ declare namespace Taro {
    *       }
    *     })
    *     ```
-   * @see https://developers.weixin.qq.com/miniprogram/dev/api/pulldown.html#wxstoppulldownrefresh
+   * @see https://developers.weixin.qq.com/miniprogram/dev/api/ui-other.html
    */
   function stopPullDownRefresh(): void
+
+  /**
+   * 收起键盘。
+   *
+   * **示例代码：**
+   *
+   *     ```javascript
+   *     Taro.hideKeyboard()
+   *     ```
+   * @see https://developers.weixin.qq.com/miniprogram/dev/api/ui-other.html
+   */
+  function hideKeyboard(): void
 
   /**
    * @since 1.4.0

@@ -36,19 +36,21 @@ class Input extends Nerv.Component {
   }
 
   componentDidMount () {
-    this.inputRef.addEventListener('input', (e) => {
-      this.onInput(e)
-    })
+    // 修复无法选择文件
+    if (this.props.type === 'file') {
+      this.inputRef.addEventListener('change', this.onInput)
+    }
   }
 
-  componentUnMount () {
-    this.inputRef.removeEventListener('input', (e) => {
-      this.onInput(e)
-    })
+  componentWillUnMount () {
+    // 修复无法选择文件
+    if (this.props.type === 'file') {
+      this.inputRef.removeEventListener('change', this.onInput)
+    }
   }
 
   onInput (e) {
-    const { onChange = '' } = this.props
+    const { onInput = '', onChange = '' } = this.props
     if (!this.isOnComposition) {
       Object.defineProperty(e, 'detail', {
         enumerable: true,
@@ -56,7 +58,8 @@ class Input extends Nerv.Component {
           value: e.target.value
         }
       })
-      if (onChange) onChange && onChange(e)
+      if (onChange) return onChange && onChange(e)
+      if (onInput) return onInput && onInput(e)
     }
   }
 
@@ -147,6 +150,7 @@ class Input extends Nerv.Component {
         placeholder={placeholder}
         disabled={disabled}
         max={maxLength}
+        onInput={this.onInput}
         onFocus={this.onFocus}
         onBlur={this.onBlur}
         autofocus={focus}

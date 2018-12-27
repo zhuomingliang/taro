@@ -121,7 +121,7 @@ function parseJSXChildren (
     })
     .reduce((str, child) => {
       if (t.isJSXText(child)) {
-        return str + child.value
+        return str + child.value.trim()
       }
       if (t.isJSXElement(child)) {
         return str + parseJSXElement(child)
@@ -200,7 +200,16 @@ export function parseJSXElement (element: t.JSXElement): string {
           ) {
             value = `{= ${code} =}`
           } else {
-            value = isBindEvent || isAlipayEvent || name === Adapter.key ? code : `{{${isJSXMetHod && name === 'data' ? '...' : ''}${code}}}`
+            if (Adapter.key === name) {
+              const splitCode = code.split('.')
+              if (splitCode.length > 1) {
+                value = splitCode.slice(1).join('.')
+              } else {
+                value = code
+              }
+            } else {
+              value = isBindEvent || isAlipayEvent ? code : `{{${isJSXMetHod && name === 'data' ? '...' : ''}${code}}}`
+            }
           }
           if (Adapter.type === Adapters.swan && name === Adapter.for) {
             value = code

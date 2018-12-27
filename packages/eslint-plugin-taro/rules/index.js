@@ -9,17 +9,25 @@ const allRules = {
   'no-stateless-component': require('./no-stateless-component'),
   // 'jsx-handler-names': require('./jsx-handler-names'),
   'reserve-class-properties': require('./reserve-class-properties'),
-  'function-naming': require('./function-naming'),
+  // 'function-naming': require('./function-naming'),
   'class-naming': require('./class-naming'),
   'props-reserve-keyword': require('./props-reserve-keyword'),
   'this-props-function': require('./this-props-function'),
   'render-props': require('./render-props')
 }
 
-function configureAsError (rules) {
+const transformerDisableRules = new Set([
+  'this-props-function',
+  'props-reserve-keyword'
+])
+
+function configureAsError (rules, isTransformer) {
   const result = {}
   for (const key in rules) {
     if (!has(rules, key)) {
+      continue
+    }
+    if (isTransformer && transformerDisableRules.has(key)) {
       continue
     }
     result[`taro/${key}`] = 2
@@ -27,9 +35,12 @@ function configureAsError (rules) {
   return result
 }
 
+const transformerRules = configureAsError(allRules, true)
+
 const activeRules = configureAsError(allRules)
 
 module.exports = {
   activeRules,
-  allRules
+  allRules,
+  transformerRules
 }
